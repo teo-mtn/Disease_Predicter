@@ -24,7 +24,7 @@ MaFenetre::MaFenetre(QWidget *parent) : QMainWindow(parent)
 
     tabLabel = new QLabel("Database's Table", this);
     tabLabel->setFont(QFont("Garamond", 10, true));
-    tabLabel->setGeometry(20, 250, 100, 75);
+    tabLabel->setGeometry(20, 225, 100, 75);
 
     quit = new QPushButton("Quit", this);
     quit->setGeometry(700,550,100,50);
@@ -44,8 +44,8 @@ MaFenetre::MaFenetre(QWidget *parent) : QMainWindow(parent)
     cough-> setGeometry(350,125,100,50);
     cough->addItem("NULL");
 
-    tabBD = new QTableWidget;
-    tabBD->setGeometry(20, 275, 600, 300);
+    tabBD = new QTableWidget(m_mat.size(), m_mat[0].size(), this);
+    tabBD->setGeometry(20, 275, 450, 300);
 
     for (unsigned int i = 0; i <= m_vet[i].size()-1; ++i){
         if (fever->findText(QString::fromStdString(m_mat[i][0])) == -1)
@@ -58,10 +58,8 @@ MaFenetre::MaFenetre(QWidget *parent) : QMainWindow(parent)
 
 
     for (unsigned int j = 0; j<= m_vet[j].size()-1; ++j) {
-        tabBD->insertColumn(j);
         for (unsigned int k = 0; k <= m_mat[j].size()-1; ++k) {
-            tabBD->insertRow(k);
-            tabBD->setItem(k,j, new QTableWidgetItem(QString::fromStdString(m_mat[j][k])));
+            tabBD->setItem(j, k, new QTableWidgetItem(QString::fromStdString(m_mat[j][k])));
         }
     }
 
