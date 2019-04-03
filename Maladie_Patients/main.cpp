@@ -6,7 +6,7 @@
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
-    MaFenetre fenetre;
+    MaFenetre fenetre(nullptr);
     fenetre.show();
     return app.exec();
 }

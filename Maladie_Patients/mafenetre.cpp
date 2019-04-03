@@ -1,9 +1,10 @@
+#include <QMessageBox>
 #include "mafenetre.h"
 #include "charger_csv.h"
 
 MaFenetre::MaFenetre(QWidget *parent) : QMainWindow(parent)
 {
-    read_csv (m_mat, m_vet, "/amuhome/m17015514/Bureau/data.csv");
+    read_csv (m_mat, m_vet, "/amuhome/m17015514/build-Maladie_Patients-Desktop_Qt_5_12_0_GCC_64bit-Debug.2/data.csv");
 
     setFixedSize(800,600);
     title = new QLabel ("Logiciel de prédiction des maladies", this);
@@ -26,11 +27,19 @@ MaFenetre::MaFenetre(QWidget *parent) : QMainWindow(parent)
     tabLabel->setFont(QFont("Garamond", 10, true));
     tabLabel->setGeometry(20, 225, 100, 75);
 
+    result = new QLabel(this);
+    result->setFont(QFont("Garamond", 10, true));
+    result->setVisible(false);
+    result->setGeometry(250, 200, 200, 200);
+
     quit = new QPushButton("Quit", this);
     quit->setGeometry(700,550,100,50);
 
     predict = new QPushButton("Predict", this);
     predict->setGeometry(500, 125, 100, 50);
+
+    connect(quit, SIGNAL(clicked()), this, SLOT(setQuitter()));
+    connect(predict, SIGNAL(clicked()), this, SLOT(prediction()));
 
     fever = new QComboBox(this);
     fever-> setGeometry(100,125,100,50);
@@ -47,7 +56,7 @@ MaFenetre::MaFenetre(QWidget *parent) : QMainWindow(parent)
     tabBD = new QTableWidget(m_mat.size(), m_mat[0].size(), this);
     tabBD->setGeometry(20, 275, 450, 300);
 
-    for (unsigned int i = 0; i <= m_vet[i].size()-1; ++i){
+    for (unsigned int i = 0; i < m_mat.size(); ++i){
         if (fever->findText(QString::fromStdString(m_mat[i][0])) == -1)
             fever->addItem(QString::fromStdString(m_mat[i][0]));
         if (pain->findText(QString::fromStdString(m_mat[i][1])) == -1)
@@ -56,19 +65,94 @@ MaFenetre::MaFenetre(QWidget *parent) : QMainWindow(parent)
             cough->addItem(QString::fromStdString(m_mat[i][2]));
     }
 
+    std::set<std::string> valeursDouleur;
 
-    for (unsigned int j = 0; j<= m_vet[j].size()-1; ++j) {
-        for (unsigned int k = 0; k <= m_mat[j].size()-1; ++k) {
-            tabBD->setItem(j, k, new QTableWidgetItem(QString::fromStdString(m_mat[j][k])));
-        }
-    }
+    for (unsigned i=0; i < m_mat.size(); ++i)
+       {
+          tabBD->setItem(i, 0, new QTableWidgetItem(m_mat[i][0].c_str()));
 
-    connect(quit, SIGNAL(clicked()),
-            this, SLOT(setQuitter()));
+           tabBD->setItem(i, 1, new QTableWidgetItem(m_mat[i][1].c_str()));
+           valeursDouleur.insert(m_mat[i][1]);
+
+           tabBD->setItem(i, 2, new QTableWidgetItem(m_mat[i][2].c_str()));
+
+           tabBD->setItem(i, 3, new QTableWidgetItem(m_mat[i][3].c_str()));
+           m_freqMaladie[m_mat[i][3]] += 1;
+           m_valeursMaladies.insert(m_mat[i][3]);
+       }
+
+    for (const std::string& maladie : m_valeursMaladies)
+        m_freqMaladie[maladie] /= m_mat.size();
+
 }
 
 void MaFenetre::setQuitter()
 {
     exit(0);
+}
+
+void MaFenetre::prediction()
+{
+    string maladieResult;
+        double score = 0;
+        cout << "Score: " << score << endl;
+        for(const string& maladie : m_valeursMaladies)
+        {
+            double conf1=0.0, conf2=0.0, conf3=0.0;
+
+            for(int i=0; i < m_mat.size(); ++i)
+            {
+                if(m_mat[i][3] == maladie)
+                {
+                    if(m_mat[i][0]==fever->currentText().toStdString())
+                        conf1 += 1.0;
+
+                    if(m_mat[i][1]==pain->currentText().toStdString())
+                        conf2 += 1.0;
+
+                    if(m_mat[i][2]==cough->currentText().toStdString())
+                        conf3 += 1.0;
+                }
+            }
+
+            double freq = m_freqMaladie[maladie] * m_mat.size();
+
+            if (fever->currentText().toStdString() == "NULL")
+                conf1 = 1;
+            else
+                conf1 /= freq;
+
+            if (pain->currentText().toStdString() == "NULL")
+                conf2 = 1;
+            else
+                conf2 /= freq;
+
+            if (cough->currentText().toStdString() == "NULL")
+                conf3 = 1;
+            else
+                conf3 /= freq;
+
+            if (fever->currentText().toStdString() == "NULL" && fever->currentText().toStdString() == "NULL" && cough->currentText().toStdString() == "NULL")
+            {
+                maladieResult = "Impossible de trouver la maladie";
+                break;
+            }
+
+            if(m_freqMaladie[maladie] * conf1 * conf2 * conf3 > score)
+            {
+                maladieResult = maladie;
+                score = m_freqMaladie[maladie] * conf1 * conf2 * conf3;
+            }
+        }
+
+        result->setText(maladieResult.c_str());
+        cout << result << endl;
+        result->adjustSize();
+        result->update();
+        result->setVisible(true);
+
+        QMessageBox msgbox;
+           msgbox.setText(maladieResult.c_str());
+           msgbox.exec();
 }
 
